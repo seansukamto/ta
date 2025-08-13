@@ -1,0 +1,6 @@
+TA-Lib
+flask
+pandas
+yfinance
+matplotlib
+numpy
