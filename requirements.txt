@@ -1,6 +1,7 @@
 TA-Lib
-flask
 pandas
 yfinance
 matplotlib
 numpy
+fastapi
+uvicorn[standard]
