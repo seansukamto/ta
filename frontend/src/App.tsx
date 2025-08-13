@@ -42,6 +42,7 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<AnalyzeResponse | null>(null)
   const [selectedChart, setSelectedChart] = useState<ChartType>('comprehensive')
+  const [downloading, setDownloading] = useState(false)
 
   const handleAnalyze = async () => {
     setLoading(true)
@@ -56,14 +57,41 @@ function App() {
     }
   }
 
-  const handleDownloadChart = (chartType: ChartType) => {
-    const url = `http://localhost:8001/api/chart?symbol=${encodeURIComponent(data!.symbol)}&period=${encodeURIComponent(data!.period)}&type=${chartType}`
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${data!.symbol}_${chartType}_${data!.period}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  const handleDownloadChart = async (chartType: ChartType) => {
+    setDownloading(true)
+    try {
+      const url = `http://localhost:8001/api/chart?symbol=${encodeURIComponent(data!.symbol)}&period=${encodeURIComponent(data!.period)}&type=${chartType}`
+      
+      // Fetch the image data
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error('Failed to fetch chart image')
+      }
+      
+      // Convert to blob
+      const blob = await response.blob()
+      
+      // Create blob URL
+      const blobUrl = window.URL.createObjectURL(blob)
+      
+      // Create download link
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = `${data!.symbol}_${chartType}_${data!.period}.png`
+      
+      // Trigger download
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Clean up blob URL
+      window.URL.revokeObjectURL(blobUrl)
+    } catch (error) {
+      console.error('Download failed:', error)
+      alert('Failed to download chart. Please try again.')
+    } finally {
+      setDownloading(false)
+    }
   }
 
   const latest = useMemo(() => {
@@ -167,9 +195,10 @@ function App() {
                   />
                   <button
                     onClick={() => handleDownloadChart(selectedChart)}
-                    className="absolute top-2 right-2 bg-slate-900 text-white text-xs px-2 py-1 rounded hover:bg-slate-800 transition-colors"
+                    disabled={downloading}
+                    className="absolute top-2 right-2 bg-slate-900 text-white text-xs px-2 py-1 rounded hover:bg-slate-800 transition-colors disabled:opacity-50"
                   >
-                    Download
+                    {downloading ? 'Downloading...' : 'Download'}
                   </button>
                 </div>
               </div>
